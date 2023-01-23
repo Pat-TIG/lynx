@@ -1,0 +1,9 @@
+---
+org:
+  name: tigera-cs
+  description: Customer Sucess at Tigera
+teams:
+  - name: cs
+    description: Tigera CS Team
+  - name: devops
+    description: CS Devops
