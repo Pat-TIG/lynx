@@ -1,0 +1,50 @@
+users:
+  - username: noah
+    email: noah@tigera.io
+    first_name: Noah
+    last_name: Anvari
+    superuser: yes
+    teams: [cs]
+    role: admin
+  - username: pooriya
+    email: pooriya@tigera.io
+    first_name: Pooriya
+    last_name: Aghaalitari
+    superuser: yes
+    teams: [cs]
+    role: admin
+  - username: nagi
+    email: nagi@tigera.io
+    first_name: Nagireddy
+    last_name: Vumma
+    superuser: yes
+    teams: [cs]
+    role: admin
+  - username: pervez
+    email: pervez@tigera.io
+    first_name: Pervez
+    last_name: Sikora
+    superuser: yes
+    teams: [cs]
+    role: admin
+  - username: rui
+    email: rui@tigera.io
+    first_name: Rui De Abreu
+    last_name: Sousa
+    superuser: yes
+    teams: [cs]
+    role: admin
+  - username: sebastien
+    email: sebastien@tigera.io
+    first_name: Sebastien
+    last_name: Le Liepvre
+    superuser: yes
+    teams: [cs]
+    role: admin
+  - username: justin
+    email: justin.conrad@tigera.io
+    first_name: Justin
+    last_name: Conrad
+    superuser: yes
+    teams: [cs]
+    role: admin
