@@ -1,0 +1,4 @@
+lynx:
+  admin_email: customer-success@tigera.io
+  admin_user: tigera-cs
+tower_image: "tellerulam/lynx:0.1.1"
