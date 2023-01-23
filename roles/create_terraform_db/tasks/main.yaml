@@ -1,0 +1,8 @@
+---
+- name: Create postgres DB
+  community.postgresql.postgresql_db:
+    login_host: "{{ pg_hostname }}"
+    login_user: "lynxuser"
+    login_password:  "{{ pg_password }}"
+    name: terraform
+
