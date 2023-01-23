@@ -1,0 +1,9 @@
+Host bastion
+  Hostname {{ hostvars['localhost']['groups']['bastion'] | first }}
+  User ubuntu
+{% for worker in hostvars['localhost']['groups']['linux'] %}
+Host worker{{ loop.index }}
+  Hostname {{ worker }}
+  User ec2-user
+  ProxyJump bastion
+{% endfor %}

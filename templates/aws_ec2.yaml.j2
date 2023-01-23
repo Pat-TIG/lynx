@@ -1,0 +1,10 @@
+---
+plugin: aws_ec2
+regions:
+  - ca-central-1
+filters:
+  tag:tigera.fr/environment: "{{ terraform_output.outputs.cluster_name.value }}"
+keyed_groups:
+  - key: tags['tigera.fr/role'].split(',')
+    prefix: ''
+    separator: ''

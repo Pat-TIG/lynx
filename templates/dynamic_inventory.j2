@@ -1,0 +1,10 @@
+[bastion]
+[linux]
+[bastion:vars]
+ansible_user=ubuntu
+[linux:vars]
+ansible_user=ec2-user
+ansible_ssh_extra_args="-o ProxyCommand='ssh -o StrictHostKeyChecking=no -W %h:%p ubuntu@{{ hostvars[groups['bastion'][0]]['public_dns_name'] }}'"
+[all:vars]
+cluster_endpoint="{{ terraform_output.outputs.cluster_endpoint.value }}"
+pg_hostname="{{ terraform_output.outputs.db_endpoint.value.split(":")[0] }}"
