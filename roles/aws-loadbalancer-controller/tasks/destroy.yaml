@@ -1,0 +1,5 @@
+- name: Delete AWS LoadBalancer Controller
+  kubernetes.core.k8s:
+    state: absent
+    template: aws-load-balancer-controller-deployment.yaml.j2
+    wait: yes

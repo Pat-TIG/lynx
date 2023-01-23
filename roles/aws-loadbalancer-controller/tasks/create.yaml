@@ -1,0 +1,10 @@
+- name: Apply AWS Loadbalancer Controller
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', item) }}"
+  with_fileglob: '*.yaml'
+
+- name: Apply AWS LoadBalancer Controller
+  kubernetes.core.k8s:
+    state: present
+    template: aws-load-balancer-controller-deployment.yaml.j2
