@@ -1,0 +1,68 @@
+---
+- name: Create Tower EC2 job template
+  tower_job_template:
+    name: "Tech Screen EC2"
+    job_type: "run"
+    organization: "{{ org.name }}"
+    inventory: "EC2 inventory"
+    project: "Lynx Core"
+    playbook: "ec2.yaml"
+    verbosity: 0
+    extra_vars:
+      interface_count: "2"
+      bastion_extra_volume_size: "5"
+      os_bastion: "rhel-8"
+    state: present
+    credentials:
+      - "AWS IAM Credential"
+      - "Postgres Terraform Url"
+      - "SSH key for lynx"
+
+- name: Create Tower Lab job template
+  tower_job_template:
+    name: "Tech Screen Lab"
+    job_type: "run"
+    organization: "{{ org.name }}"
+    inventory: "EC2 inventory"
+    project: "Lynx Core"
+    playbook: "techscreen.yaml"
+    verbosity: 0
+    extra_vars:
+      state: present
+    credentials:
+      - "SSH key for lynx"
+      - "Github Token"
+
+- name: Create Tower Lab workflow template
+  awx.awx.tower_workflow_job_template:
+    name: "02 Tech Screen Lab Workflow"
+    organization: "{{ org.name }}"
+    inventory: "EC2 inventory"
+    extra_vars:
+      dns_domain: "{{ cluster_name }}.{{ dns_domain }}"
+      lynx_ssh_public_key: "{{ lynx_ssh_public_key }}"
+      cloud_provider: aws
+    survey_enabled: yes
+    survey_spec: "{{ lookup('file', 'surveys/techscreen.json') }}"
+
+- name: Create Tower Lab Worklow EC2 node template
+  awx.awx.tower_workflow_job_template_node:
+    identifier: install-techscreen
+    workflow: "02 Tech Screen Lab Workflow"
+    unified_job_template: Tech Screen Lab
+
+- name: Create Tower Lab Worklow inventory update node template
+  awx.awx.tower_workflow_job_template_node:
+    identifier: update-ec2-techscreen-inventory
+    workflow: "02 Tech Screen Lab Workflow"
+    unified_job_template: EC2 inventory source
+    success_nodes:
+      - install-techscreen
+
+- name: Create Tower Lab Worklow EC2 node template
+  awx.awx.tower_workflow_job_template_node:
+    identifier: create-techscreen-ec2-infra
+    workflow: "02 Tech Screen Lab Workflow"
+    unified_job_template: Tech Screen EC2
+    success_nodes:
+      - update-ec2-techscreen-inventory

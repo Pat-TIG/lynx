@@ -1,0 +1,120 @@
+---
+- name: Create the Lynx Core Project
+  tower_project:
+    name: "Lynx Core"
+    organization: "{{ org.name }}"
+    scm_update_on_launch: yes
+    scm_type: "git"
+    scm_url: "git@github.com:tigera-cs/patrick-lynx-core.git"
+    scm_credential: "Github tigera-cs"
+
+- name: Add EC2 dynamic inventory
+  tower_inventory:
+    name: "EC2 inventory"
+    description: "Dynamic inventory"
+    organization: "{{ org.name }}"
+
+- name: Add EC2 dynamic inventory source
+  tower_inventory_source:
+    name: "EC2 inventory source"
+    description: "Dynamic inventory source"
+    organization: "{{ org.name }}"
+    inventory: "EC2 inventory"
+    source: ec2
+    overwrite: True
+    source_vars:
+      regions:
+        - ca-central-1
+        - eu-west-1
+        - us-west-1
+      filters:
+        'tag:tigera.fr/cloudOps': lynx
+      hostnames:
+        - 'tag:Name'
+      keyed_groups:
+        - key: 'tags[''tigera.fr/role''].split('','') | replace(''-'', ''_'')'
+          prefix: ''
+          separator: ''
+        - key: 'tags[''tigera.fr/environment''].split('','') | replace(''-'', ''_'')'
+          prefix: ''
+          separator: ''
+      compose:
+        ansible_ssh_extra_args: >
+          "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o
+          UserKnownHostsFile=/dev/null -W %h:%p lynx@" + key_name +
+          ".lynx.tigera.fr'"
+                                if(tags["tigera.fr/role"] != 'bastion')
+        ansible_user: |
+          '"ubuntu"'
+                      if(tags["tigera.fr/role"] != 'bastion') else
+          '"lynx"'
+        ansible_host: >
+          private_ip_address
+                      if(tags["tigera.fr/role"] != 'bastion') else 
+          key_name + ".lynx.tigera.fr"
+
+- name: Create Tower EC2 job template
+  tower_job_template:
+    name: "Single EC2"
+    job_type: "run"
+    organization: "{{ org.name }}"
+    inventory: "EC2 inventory"
+    project: "Lynx Core"
+    playbook: "ec2.yaml"
+    verbosity: 0
+    state: present
+    credentials:
+      - "AWS IAM Credential"
+      - "Postgres Terraform Url"
+      - "SSH key for lynx"
+
+- name: Create Tower Lab job template
+  tower_job_template:
+    name: "Single Lab"
+    job_type: "run"
+    organization: "{{ org.name }}"
+    inventory: "EC2 inventory"
+    project: "Lynx Core"
+    playbook: "lab.yaml"
+    verbosity: 0
+    extra_vars:
+      state: present
+    credentials:
+      - "SSH key for lynx"
+      - "Github Token"
+      - "Calico Enterprise License"
+      - "Calico Enterprise Pull Secret"
+
+- name: Create Tower Lab workflow template
+  awx.awx.tower_workflow_job_template:
+    name: "01 Single Lab Workflow"
+    organization: "{{ org.name }}"
+    inventory: "EC2 inventory"
+    extra_vars:
+      dns_domain: "{{ cluster_name }}.{{ dns_domain }}"
+      lynx_ssh_public_key: "{{ lynx_ssh_public_key }}"
+      cloud_provider: aws
+    survey_enabled: yes
+    survey_spec: "{{ lookup('file', 'surveys/prod.json') }}"
+
+- name: Create Tower Lab Worklow EC2 node template
+  awx.awx.tower_workflow_job_template_node:
+    identifier: install-lab
+    workflow: "01 Single Lab Workflow"
+    unified_job_template: Single Lab
+
+- name: Create Tower Lab Worklow inventory update node template
+  awx.awx.tower_workflow_job_template_node:
+    identifier: update-ec2-inventory
+    workflow: "01 Single Lab Workflow"
+    unified_job_template: EC2 inventory source
+    success_nodes:
+      - install-lab
+
+- name: Create Tower Lab Worklow EC2 node template
+  awx.awx.tower_workflow_job_template_node:
+    identifier: create-ec2-infra
+    workflow: "01 Single Lab Workflow"
+    unified_job_template: Single EC2
+    success_nodes:
+      - update-ec2-inventory

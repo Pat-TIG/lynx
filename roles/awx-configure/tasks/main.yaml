@@ -1,0 +1,213 @@
+---
+- name: Wait for Lynx Ingress
+  uri:
+    url: "https://{{ cluster_name }}.{{ dns_domain }}/api/v2/ping/"
+    method: GET
+  register: result
+  until: result.status == 200
+  retries: 100
+  delay: 15
+
+- name: Set basic AWX settings
+  tower_settings:
+    settings:
+      TOWER_URL_BASE: "https://{{ cluster_name }}.{{ dns_domain }}"
+      ALLOW_OAUTH2_FOR_EXTERNAL_USERS: true
+      SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: "{{ google_oauth2_clientid }}"
+      SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET: "{{ google_oauth2_clientsecret }}"
+      OAUTH2_PROVIDER:
+        {
+          "ACCESS_TOKEN_EXPIRE_SECONDS": 2592000,
+          "AUTHORIZATION_CODE_EXPIRE_SECONDS": 600,
+          "REFRESH_TOKEN_EXPIRE_SECONDS": 864000,
+        }
+      AUTH_BASIC_ENABLED: true
+      ORG_ADMINS_CAN_SEE_ALL_USERS: true
+      MANAGE_ORGANIZATION_AUTH: true
+      SESSION_COOKIE_AGE: 1800
+    tower_host: "https://{{ cluster_name }}.{{ dns_domain }}"
+    tower_username: tigera-cs
+    tower_password: "{{ lynx_password }}"
+
+- name: Create a new organization
+  tower_organization:
+    name: "{{ org.name }}"
+    description: "{{ org.description }}"
+    galaxy_credentials:
+      - Ansible Galaxy
+    state: present
+
+- name: Create a Team
+  tower_team:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    organization: "{{ org.name }}"
+  loop: "{{ teams }}"
+
+- name: Create users
+  awx.awx.tower_user:
+    username: "{{ item.username }}"
+    password: "{{ item.password | default('changeme') }}"
+    email: "{{ item.email }}"
+    first_name: "{{ item.first_name }}"
+    last_name: "{{ item.last_name }}"
+    superuser: "{{ item.superuser | default('no') }}"
+    auditor: "{{ item.auditor | default('no') }}"
+  loop: "{{ users }}"
+
+- name: Add users to roles
+  awx.awx.tower_role:
+    user: "{{ item.0.username }}"
+    target_team: "{{ item.1 }}"
+    role: "{{ item.0.role }}" # admin, read, member, execute, adhoc, update, use, auditor, project_admin, inventory_admin, credential_admin, workflow_admin, notification_admin, job_template_admin
+    state: present
+  with_subelements:
+    - "{{ users }}"
+    - teams
+
+- name: Create SCM Credential
+  tower_credential:
+    name: "Github tigera-cs"
+    organization: "{{ org.name }}"
+    state: present
+    credential_type: Source Control
+    inputs:
+      username: awx-lynx
+      ssh_key_data: "{{ lynx_ssh_key }}"
+
+- name: Create Postgres Credential type
+  tower_credential_type:
+    name: postgres_url
+    kind: cloud
+    inputs:
+      fields:
+        - id: 'url'
+          type: 'string'
+          label: 'Postgres URL'
+          secret: true
+      required: 
+        - url
+    injectors:
+      extra_vars:
+        postgres_url: !unsafe "{{ url }}"
+
+- name: Create Github Token Credential Type
+  tower_credential_type:
+    name: github_token
+    kind: cloud
+    inputs:
+      fields:
+        - id: 'token'
+          type: 'string'
+          label: 'Github Token'
+          secret: true
+      required: 
+        - token
+    injectors:
+      extra_vars:
+        github_pat: !unsafe "{{ token }}"
+
+- name: Create Enterprise License Credential Type
+  tower_credential_type:
+    name: Calico Enterprise License
+    kind: cloud
+    inputs:
+      fields:
+        - id: 'license'
+          type: 'string'
+          label: 'Enterprise License'
+          secret: true
+      required: 
+        - license
+    injectors:
+      extra_vars:
+        enterprise_license: !unsafe "{{ license }}"
+
+- name: Create Enterprise Pull Secret Credential Type
+  tower_credential_type:
+    name: Calico Enterprise Pull Secret
+    kind: cloud
+    inputs:
+      fields:
+        - id: 'pull_secret'
+          type: 'string'
+          label: 'Enterprise Pull Secret'
+          secret: true
+      required: 
+        - pull_secret
+    injectors:
+      extra_vars:
+        pull_secret: !unsafe "{{ pull_secret }}"
+
+- name: Create Enterprise Pull Secret Credential
+  tower_credential:
+    name: Calico Enterprise Pull Secret
+    description: Calico Enterprise Pull Secret for quay.io
+    organization: "{{ org.name }}"
+    credential_type: Calico Enterprise Pull Secret
+    inputs:
+      pull_secret: "{{ pull_secret }}"
+
+- name: Create Enterprise License Credential
+  tower_credential:
+    name: Calico Enterprise License
+    description: Calico Enterprise License (60 day rotation)
+    organization: "{{ org.name }}"
+    credential_type: Calico Enterprise License
+    inputs:
+      license: "{{ enterprise_license }}"
+
+- name: Create Postgres Terraform Credential
+  tower_credential:
+    name: Postgres Terraform Url
+    description: Postgres Url to use for Terraform remote state
+    organization: "{{ org.name }}"
+    credential_type: postgres_url
+    inputs:
+      url: "postgres://lynxuser:{{ pg_password }}@{{ pg_hostname }}/terraform"
+
+- name: Create Github Token Credential
+  tower_credential:
+    name: Github Token
+    description: Github Personal Access Token
+    organization: "{{ org.name }}"
+    credential_type: github_token
+    inputs:
+      token: "{{ lynx_github_pat }}"
+
+- name: Create AWS IAM Credential
+  tower_credential:
+    name: AWS IAM Credential
+    description: AWS IAM Credential for Lynx
+    organization: "{{ org.name }}"
+    credential_type: Amazon Web Services
+    inputs:
+      username: "{{ lynx_aws_access_key }}"
+      password: "{{ lynx_aws_secret_access_key }}"
+
+- name: Create Machine credential
+  tower_credential:
+    name: SSH key for lynx
+    description: SSH key for lynx
+    organization: "{{ org.name }}"
+    credential_type: Machine
+    inputs:
+      ssh_key_data: "{{ lynx_ssh_key }}"
+
+#- name: Create Github Personal Access Token Credential
+#  tower_credential:
+#    name: Github PAT for Lynx
+#    description: Github PAT for Lynx
+#    organization: "{{ org.name }}"
+#    credential_type: GitHub Personal Access Token
+#    inputs:
+#      token: "{{ lynx_github_pat }}"
+#
+- name: Include Prod Templates
+  include_tasks: prod.yaml
+
+- name: Include David Dev
+  include_tasks: david.yaml
+
+- name: Include Tech Screen Templates
+  include_tasks: techscreen.yaml
