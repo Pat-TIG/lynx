@@ -1,0 +1,76 @@
+---
+- hosts: localhost
+  tasks:
+    - debug: msg="{{  playbook_dir }}/terraform/kubeconfig_{{ cluster_name }}"
+    - name: Delete Ingress for AWX
+      community.kubernetes.k8s:
+        state: absent
+        template: ingress.yaml.j2
+        wait: yes
+        kubeconfig: "{{ playbook_dir }}/terraform/kubeconfig_{{ cluster_name }}"
+      ignore_errors: true
+
+    - name: Delete External DNS
+      import_role:
+        name: external-dns
+      vars:
+        state: absent
+      environment:
+        K8S_AUTH_KUBECONFIG: "{{ playbook_dir }}/terraform/kubeconfig_{{ cluster_name }}"
+      ignore_errors: true
+
+    - name: Delete AWS Loadbalancer Controller
+      import_role:
+        name: aws-loadbalancer-controller
+      vars:
+        state: absent
+      environment:
+        K8S_AUTH_KUBECONFIG: "{{ playbook_dir }}/terraform/kubeconfig_{{ cluster_name }}"
+      ignore_errors: true
+
+    - name: Find target groups
+      community.aws.elb_target_group_info:
+      register: targets
+
+    - name: Find security group
+      amazon.aws.ec2_group_info:
+        filters:
+          "tag:elbv2.k8s.aws/cluster": "{{ cluster_name }}"
+      register: sec_group
+
+    - name: "Delete security group by its id"
+      amazon.aws.ec2_group:
+        group_id: "{{ sec_group.security_groups[0].group_id }}"
+        state: absent
+      when: (sec_group['security_groups'] | default([])) | length
+      register: result
+      retries: 3
+      delay: 3
+      until: result is succeeded
+
+    - name: Terraform refresh
+      command: terraform refresh -var "cluster_name={{ cluster_name }}" -var pg_password="{{ pg_password }}" -var dns_domain="{{ dns_domain }}"
+      args:
+        chdir: terraform/
+
+    - name: Terraform destroy
+      community.general.terraform:
+        project_path: terraform/
+        state: absent
+        variables:
+          cluster_name="{{ cluster_name }}"
+          pg_password="{{ pg_password }}"
+          dns_domain="{{ dns_domain }}"
+
+    - name: Get all volumes
+      amazon.aws.ec2_vol_info:
+      register: vols
+
+    - name: Delete leftover volumes
+      amazon.aws.ec2_vol:
+        state: absent
+        id: "{{ item }}"
+      loop: "{{ vols | json_query(query) }}"
+      vars:
+        query: 'volumes[?tags."kubernetes.io/cluster/{{ cluster_name }}"].id'
+
