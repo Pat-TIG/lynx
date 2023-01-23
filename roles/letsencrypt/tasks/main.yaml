@@ -1,0 +1,57 @@
+- name: Create private key and CSR
+  community.crypto.openssl_csr:
+    path: test.csr
+    privatekey_content: "{{ priv_key }}"
+    common_name: "{{ common_name }}"
+
+- name: Create a challenge using an account key file.
+  community.crypto.acme_certificate:
+    account_key_content: "{{ account_key }}"
+    account_email: "{{ acme_email }}"
+    src: test.csr
+    cert: test.crt
+    challenge: dns-01
+    acme_version: 2
+    terms_agreed: yes
+    acme_directory: "{{ acme_directory }}"
+    remaining_days: 15
+  register: dns_challenge
+
+- debug: msg="{{ dns_challenge }}"
+
+- name: Create Route53 DNS record
+  community.aws.route53:
+    zone: "{{ route53_zone }}"
+    record: "{{ dns_challenge.challenge_data[common_name]['dns-01'].record }}"
+    type: TXT
+    ttl: 60
+    state: present
+    wait: yes
+    overwrite: yes
+    value: "{{ dns_challenge.challenge_data[common_name]['dns-01'].resource_value | regex_replace('^(.*)$', '\"\\1\"') }}"
+  when: dns_challenge is changed
+
+- name: Let the challenge be validated and retrieve the cert and intermediate certificate
+  community.crypto.acme_certificate:
+    account_key_content: "{{ account_key }}"
+    account_email: "{{ acme_email }}"
+    src: test.csr
+    cert: test.crt
+    fullchain: test-fullchain.crt
+    chain: test-intermediate.crt
+    challenge: dns-01
+    acme_directory: "{{ acme_directory }}"
+    acme_version: 2
+    terms_agreed: yes
+    remaining_days: 15
+    data: "{{ dns_challenge }}"
+  when: dns_challenge is changed
+
+- name: create/update a certificate in AWS ACM
+  community.aws.aws_acm:
+    certificate: "{{ lookup('file', 'test.crt' ) }}"
+    private_key: "{{ priv_key }}"
+    certificate_chain: "{{ lookup('file', 'test-fullchain.crt') }}"
+    name_tag: "{{ acm_cert_name }}"
+    state: present
+  register: acm_cert
