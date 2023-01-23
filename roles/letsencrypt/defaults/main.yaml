@@ -1,0 +1,5 @@
+acme_directory: https://acme-staging-v02.api.letsencrypt.org/directory
+acme_email: david@tigera.io
+common_name: '*.tigera.ca'
+acm_cert_name: 'wildcard.tigera.ca'
+route53_zone: 'tigera.ca'
