@@ -1,0 +1,13 @@
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: awx-operator
+subjects:
+  - kind: ServiceAccount
+    name: awx-operator
+    namespace: awx
+roleRef:
+  kind: ClusterRole
+  name: awx-operator
+  apiGroup: rbac.authorization.k8s.io
