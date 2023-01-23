@@ -1,0 +1,15 @@
+---
+#- name: Create namespace for cert-manager
+#  kubernetes.core.k8s:
+#    state: present
+#    definition:
+#      apiVersion: v1
+#      kind: Namespace
+#      metadata:
+#        name: awx
+
+- name: Apply cert-manger
+  kubernetes.core.k8s:
+    state: "{{ state | default('present') }}"
+    definition: "{{ lookup('file', item) }}"
+  with_fileglob: '*.yaml'
