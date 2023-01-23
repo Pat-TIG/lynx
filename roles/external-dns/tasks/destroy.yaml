@@ -1,0 +1,11 @@
+- name: Delete External DNS
+  kubernetes.core.k8s:
+    state: absent
+    template: external-dns.yaml.j2
+
+- name: Delete External DNS
+  kubernetes.core.k8s:
+    state: absent
+    definition: "{{ lookup('file', item) }}"
+  with_fileglob: '*.yaml'
+

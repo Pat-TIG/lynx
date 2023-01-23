@@ -1,0 +1,9 @@
+---
+- name: Include Create
+  include: create.yaml
+  when: state != 'absent'
+
+- name: Include Destroy
+  include: destroy.yaml
+  when: state == 'absent'
+

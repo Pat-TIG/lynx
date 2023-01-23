@@ -1,0 +1,10 @@
+- name: Apply External DNS
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', item) }}"
+  with_fileglob: '*.yaml'
+
+- name: Apply External DNS
+  kubernetes.core.k8s:
+    state: present
+    template: external-dns.yaml.j2
