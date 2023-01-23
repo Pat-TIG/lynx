@@ -1,0 +1,38 @@
+---
+- name: Create namespace for AWX
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: awx
+
+- name: Apply AWX operator
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', item) }}"
+  with_fileglob: '*.yaml'
+
+- name: Apply AWX Custom Resource
+  kubernetes.core.k8s:
+    state: present
+    definition: 
+      apiVersion: awx.ansible.com/v1beta1
+      kind: AWX
+      metadata:
+        name: awx
+        namespace: awx
+      spec:
+        deployment_type: awx
+        tower_admin_user: "{{ lynx.admin_user }}"
+        tower_admin_email: "{{ lynx.admin_email }}"
+        tower_admin_password: "{{ lynx_password }}"
+        tower_image: "{{ tower_image }}"
+        tower_broadcast_websocket_secret: "{{ lynx_password }}"
+        external_database: true
+
+- name: Create Postgres Secret
+  kubernetes.core.k8s:
+    state: present
+    template: postgres_secret.yaml.j2
