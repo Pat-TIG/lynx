@@ -1,0 +1,22 @@
+---
+- name: Add hashicorp gpg key
+  ansible.builtin.apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+  become: yes
+
+- name: Add hashicorp repository into sources list
+  ansible.builtin.apt_repository:
+    repo: deb https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+    state: present
+  become: yes
+
+- name: Install terraform and postgres-client
+  apt:
+    pkg:
+      - terraform
+      - postgresql-client
+      - python3-psycopg2
+      - git
+    state: present
+  become: yes
