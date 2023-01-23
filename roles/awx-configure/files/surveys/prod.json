@@ -1,0 +1,106 @@
+{
+  "name": "",
+  "description": "",
+  "spec": [
+    {
+      "question_name": "Enviroment name",
+      "question_description": "This must be unique using no hyphens",
+      "required": true,
+      "type": "text",
+      "variable": "env_name",
+      "min": 0,
+      "max": 20,
+      "choices": "",
+      "new_question": false
+    },
+    {
+      "question_name": "State of the environment",
+      "question_description": "present = create, absent = destroy",
+      "required": true,
+      "type": "text",
+      "variable": "state",
+      "min": 0,
+      "max": 20,
+      "choices": "present\nabsent",
+      "default": "present",
+      "type": "multiplechoice",
+      "new_question": false
+    },
+    {
+      "question_name": "AWS Region to use",
+      "question_description": "If you want to destroy environments, this has to match the region you created the instance in. Creating the same Environment Name in two different regions will get messed up, don't do it.",
+      "required": true,
+      "type": "text",
+      "variable": "aws_region",
+      "default": "ca-central-1",
+      "min": 0,
+      "max": 20,
+      "choices": "ca-central-1\neu-west-1\nus-west-1",
+      "type": "multiplechoice",
+      "new_question": false
+    },
+    {
+      "question_name": "Kubernetes version",
+      "question_description": "Kubernetes version",
+      "required": true,
+      "type": "text",
+      "variable": "kubernetes_version",
+      "default": "1.20.7",
+      "min": 0,
+      "max": 20,
+      "type": "text",
+      "new_question": false
+    },
+    {
+      "question_name": "Install ttyd to access bastion from a browser",
+      "question_description": "Username is tigera",
+      "required": true,
+      "type": "text",
+      "variable": "ttyd",
+      "default": "yes",
+      "min": 0,
+      "max": 20,
+      "choices": "yes\nno",
+      "type": "multiplechoice",
+      "new_question": false
+    },
+    {
+      "question_name": "Password for the 'tigera' ttyd user",
+      "question_description": "Does not work for ssh",
+      "required": true,
+      "type": "text",
+      "variable": "ttyd_password",
+      "default": "Cattitude101",
+      "min": 0,
+      "max": 20,
+      "type": "text",
+      "new_question": false
+    },
+    {
+      "question_name": "Clone traininglabs github repo",
+      "question_description": "This will add awx-lynx github personal access token on bastion",
+      "required": true,
+      "type": "text",
+      "variable": "github",
+      "default": "yes",
+      "min": 0,
+      "max": 20,
+      "choices": "yes\nno",
+      "type": "multiplechoice",
+      "new_question": false
+    },
+    {
+      "question_name": "Install and configure bird on bastion host",
+      "question_description": "Configured for labs",
+      "required": true,
+      "type": "text",
+      "variable": "bird",
+      "default": "yes",
+      "min": 0,
+      "max": 20,
+      "choices": "yes\nno",
+      "type": "multiplechoice",
+      "new_question": false
+    }
+  ]
+}
