@@ -1,8 +1,0 @@
-collections:
-#  - name: git+ssh://git@github.com/tigera-cs/ansible-tigera.git#/tigera/calico
-#    scm: git
-  - name: community.crypto
-  - name: community.kubernetes
-  - name: awx.awx
-  - name: community.aws
-  - name: community.postgresql
