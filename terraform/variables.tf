@@ -1,7 +1,7 @@
 variable "aws_region" {
   type        = string
   description = "The target AWS region for the cluster."
-  default     = "ca-central-1"
+  default     = "eu-west-1"
 }
 
 variable "key_pair_path" {
