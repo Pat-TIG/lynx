@@ -18,7 +18,7 @@ resource "aws_security_group" "postgres" {
 module "db" {
   source = "terraform-aws-modules/rds/aws"
 
-  identifier = "lynxpostgres"
+  identifier = "patlynxpostgres"
 
   engine            = "postgres"
   engine_version    = "12"
@@ -26,9 +26,9 @@ module "db" {
   allocated_storage = 5
   storage_encrypted = false
 
-  name = "lynx"
+  name = "patlynx"
 
-  username = "lynxuser"
+  username = "patlynxuser"
 
   password = var.pg_password
   port     = "5432"
