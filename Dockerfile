@@ -1,4 +1,4 @@
-FROM quay.io/ansible/awx:18.0.0
+FROM quay.io/ansible/awx:21.11.0
 
 WORKDIR /tmp
 
